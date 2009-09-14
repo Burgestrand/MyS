@@ -1,0 +1,260 @@
+# Table of Contents
+1. Introduction
+2. Abstract
+
+## Introduction
+Here I plan to document all information about WC3 packets that I find during my programming project.
+
+## Abstract
+All the WC3 (Battle.net, really) packets follow a simple structure:
+
+      0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
+    +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+    |       Signature       |    Packet Signature   |
+    +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+    |                 Packet Length                 |
+    +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+
+We first have the signature plus packet signature. These two uniquely identifies what type of packet we're dealing with. Each type must be handled individually. The packet length indicates the size of the packet, which is the size of the header (4) plus its’ data. Also, do note that all numeric values are little endian.
+
+All packets categorised first by game, “signature”, and then grouped by type, “packet signature”. Each packet description is then ordered numerically, and given a title: “(type) Name”.
+
+Each packet section begins with a short description of what the packet represents and then a diagram of the packet as a whole accompanied by a break-down of its’ components. If both the server and the client sends this packet, both cases are described independent of one another.
+
+### Warcraft III (0xF7)
+Game signature for TFT: W3XP ==> PX3W ==> 0x50583357
+
+#### Creating a LAN game and joining it
+
+1. Client goes into LAN lobby and sends out LAN_SEARCHGAME
+2. A game is already hosted, picks up on the LAN\_SEARCHGAME broadcast and responds with LAN_GAMEINFO.
+
+#### (0x00) SID_NULL
+No data, just a header.
+
+If the server sends this, reply with the same packet. If this packet has not been received then make sure to send one of these once every eight (8) minutes or so, to keep the connection alive. 
+
+#### (0x02) SID_STOPADV
+This message is sent to inform the server that a game should no longer be advertised to other users. It is sent when a game starts, or when a game is aborted (the host leaves).
+
+#### (0x04 :: Host -> Client) W3GS_ACCEPTJOIN
+Sent as a reply to W3GS_REQJOIN if the player is allowed to join the game.
+
+- (x bytes) W3GS_SLOTINFO (optional contents, size and total slots can be 0)
+- (1 bytes) Clients’ Player ID
+- (2 bytes) AF_INET (0x0200)
+- (2 bytes) Port
+- (4 bytes) IPv4
+- (8 bytes) IPv6
+
+#### (0x06 :: Host -> Client) W3GS_PLAYERINFO
+
+- (4 bytes) Players’ join counter
+- (1 bytes) Players’ ID
+- (x bytes) Player name (null terminated)
+- (2 bytes) IPv4 type tag (0x0100)
+- (2 bytes) AF_INET (0x0200)
+- (2 bytes) Players’ external port
+- (4 bytes) Players’ external IP4
+- (8 bytes) Players’ external IPv6
+- (2 bytes) AF_INET (0x0200)
+- (2 bytes) Players’ internal port
+- (4 bytes) Players’ internal IPv4
+- (8 bytes) Players’ internal IPv6
+ 
+
+#### (0x09 :: Host -> Client) W3GS_SLOTINFO
+Information about all slots, sent on slot changes.
+
+- (2 bytes) Size of slotinfo block
+    - (2 bytes) Count of slots, each slotinfo is 9 bytes:
+        - (1 bytes) Player ID (1 = host, 0 = empty / computer)
+        - (1 bytes) Download % (0 - 100)
+        - (1 bytes) Slot status
+            - 0 = Open
+            - 1 = Closed
+            - 2 = Controlled
+        - (1 bytes) AI Controlled (1 = Yes, 0 = No [Human / Open / Closed])
+        - (1 bytes) Team number (0 - 11; 12 = Free / Observer / Referee)
+        - (1 bytes) Color number (0 - 11; 12 = Free / Observer / Referee)
+        - (1 bytes) Race
+            - 0x01 = Human
+            - 0x02 = Orc
+            - 0x04 = Night Elf
+            - 0x08 = Undead
+            - 0x20 = Random
+            - 0x40 = Race selected or fixed by map or ladder game
+        - (1 bytes) Controller type
+            - 0 = Easy computer
+            - 1 = Human / Normal computer
+            - 2 = Hard computer
+        - (1 bytes) Handicap, values: 50, 60, 70, 80, 90, 100
+    - (4 bytes) Win32 GetTickCount (uptime)
+    - (1 bytes) Game type (0 = Regular game, 3 = Custom game, 0xcc = Ladder)
+    - (1 bytes) Count of slots again, end tag
+
+#### (0x1C :: Host -> Client) W3GS_KICK
+Kicks a client.
+
+- (4 bytes) Unknown (0x0d000000)
+
+#### (0x1E :: Client -> Host) W3GS_REQJOIN
+This is sent to a host to join the game.
+
+- (4 bytes) Hosts’ host count (must match)
+- (4 bytes) Win32 GetTickCount (uptime)
+- (1 bytes) Zero
+- (2 bytes) External port (clients external port: can be 0)
+- (4 bytes) Join counter
+- (x bytes) Client name, null terminated
+- (2 bytes) IPv4 Tag (always 0x0100)
+- (2 bytes) AF_INET (0x0200, can be 0)
+- (2 bytes) Internal port (can be 0)
+- (4 bytes) IPv4 (can be 0)
+- (8 bytes) IPv6
+
+#### (0x2F :: Client -> Network) W3GS_LAN_SEARCHGAME [UDP]
+Searches for LAN games. Broadcasted (once) when entering LAN lobby.
+
+- (4 bytes) Game signature
+- (4 bytes) Game version
+- (4 bytes) Zeroes
+
+#### (0x30 :: Host -> Client) W3GS_LAN_GAMEINFO [UDP]
+Response to a client’s game search.
+
+- (4 bytes) Game signature 
+- (4 bytes) Game version
+- (4 bytes) Creation counter
+- (x bytes) Game name (UTF8, null terminated)
+- (1 bytes) Zero
+- Encoded data (encoding / decoding info below)
+- (1 bytes) Zero
+- (4 bytes) Total game slots
+- (4 bytes) Game type
+    - 01 = Custom
+    - 09 = Blizzard / Ladder
+    - Unused values:
+        - 02 = Melee
+        - 03 = FFA
+        - 04 = 1v1
+        - 05 = CTF
+        - 06 = Greed
+        - 07 = Slaughter
+        - 08 = Sudden Death
+        - 10 = Iron Man Ladder
+        - 0A = Map settings
+        - 0B = Team melee
+        - 0C = Team FFA
+        - 0D = Team CTF
+        - 0F = Top vs Bottom
+- (4 bytes) Unknown, always 0x01000000
+- (4 bytes) Open (available) slots
+- (4 bytes) Game uptime in seconds
+- (2 bytes) Hosts’ port
+
+##### How to decode the encoded data
+Arrange the bytes in group of eight. Decoding works like this:
+The first byte in every group is the mask for its’ respective group. The remaining bytes are all labeled from 1 to 7. You then go through each byte; take the bytes’ position, binary shift 1 that many steps to the left and AND-operate it with the mask. If the result is 0 the resulting byte is the current byte substracted by one, otherwise the resulting byte is the same as the current byte
+
+Assume the complete encoded data is the following (hexadecimal):
+    01 03 49 07 01 01 7d 01 (group 1)
+    99 7d 01 a3 df 1d 43 4d (group 2)
+
+Decoding the first group:
+    Mask: 01 = 0000 0001
+    Data: 03 49 07 01 01 7d 01
+    03 ==> 1 & (1 << 1) ==>   01 &   10 = 0 ==> 03 - 1 = 02
+    49 ==> 1 & (1 << 2) ==> 0001 & 0100 = 0 ==> 49 - 1 = 48
+    … the mask is 1 and all binary shift operations are even numbers.
+    Result: 02 48 06 00 00 7C 00
+
+Decoding second group:
+    Mask: 99 = 1001 1001
+    Data: 7d 01 a3 df 1d 43 4d
+    7d ==> 1001 1001 & (1 << 1) ==> 0x99 & 0x02 = 0 ==> 7d - 1 = 7C
+    01 ==> 1001 1001 & (1 << 2) ==> 0x99 & 0x04 = 0 ==> 01 - 1 = 00
+    a3 ==> 1001 1001 & (1 << 3) ==> 0x99 & 0x08 = 8 ==> a3 - 0 = a3
+    … and so on.
+    Result: 7C 00 A3 DF 1C 42 4D
+
+Pseudocode:
+    forall groups
+        foreach byte with index in group
+            if index "modulo" 8 then
+                mask is byte
+            else
+                if mask AND (1 "lshift" index) is 0
+                    resultByte is (byte - 1)
+                else
+                    resultByte is byte
+
+##### How to encode decoded data
+??? to do later
+
+##### Decoded data
+The first nine (9) bytes are game flags. Bytes 10 to 13 (inclusive) is the map checksum. After that follows the map path (as a null-terminated string) and the hosts’ player name (null-terminated string). Finally there is a null-byte to signal end of coded data.
+
+- (1 byte) Game speed, possible values:
+    - 0 = Slow
+    - 1 = Normal
+    - 2 = Fast
+- (1 byte) Visibility, flag bits:
+    - 1: Hide terrain
+    - 2: Map fully explored
+    - 3: No fog of war
+    - 4: Default
+    - 5, 6:
+        - None   (0) = Off or “Referees” (see Units, bit #6)
+        - Just 6 (2) = Observer on Defeat
+        - Both   (3) = On or “Referees” (see Units, bit #6)
+    - 7: Teams Together (team members are placed close to each other)
+- (1 byte) Fixed teams, possible values:
+    - 0 = Off
+    - 6 = On
+- (1 byte) Units, flag bits:
+    - 1: Full shared unit control
+    - 2: Random hero
+    - 3: Random races
+    - 6: Observer Referees (see 2)
+- (1 byte) 0
+- (2 bytes) Map width (?)
+- (2 byte) Map height (?)
+- (4 bytes) Map Checksum (CRC32?)
+- (x bytes) Map path (null terminated string)
+- (x bytes) Host player name (null terminated)
+
+This is also listed in W3G_Format.txt, section 4.4.
+
+#### (0x31 :: Host -> Network) W3GS_LAN_CREATEGAME [UDP]
+Broadcasted to the network (255.255.255.255) when a LAN game is created.
+
+- (4 bytes) Game signature
+- (4 bytes) Game version
+- (4 bytes) Creation counter
+
+#### (0x32 :: Host -> Network) W3GS_LAN_REFRESHGAME [UDP]
+Broadcasted every 5 seconds or slot change by the host. Basically “HELLO, THERE IS A GAME HERE!”
+
+- (4 bytes) Creation counter
+- (4 bytes) Players currently in game (including host)
+- (4 bytes) Total *OPEN* slots
+
+#### (0x3D :: Host -> Client) W3GS_MAPCHECK
+Host sends this to client after playerinfo on join event.
+
+- (4 bytes) Unknown (0x01000000)
+- (x bytes) Map path (null terminated)
+- (4 bytes) Map file size
+- (4 bytes) Map info
+- (4 bytes) Map CRC32
+- (20 bytes) Map SHA1
+
+#### (0x42 :: Client -> Host) W3GS_MAPSIZE
+Client sends this to host on response of W3GS_MAPCHECK.
+
+- (4 bytes) Unknown (0x01000000)
+- (1 bytes) Size flag
+    - 1 = Have map (happens on map check or finished download)
+    - 3 = Continue download (happens efter every W3GS_MAPPARTOK)
+- (4 bytes) Map file size OR, if size flag is 3, start location of next part
