@@ -155,7 +155,8 @@ Response to a client’s game search.
 
 ##### How to decode the encoded data
 Arrange the bytes in group of eight. Decoding works like this:
-The first byte in every group is the mask for its’ respective group. The remaining bytes are all labeled from 1 to 7. You then go through each byte; take the bytes’ position, binary shift 1 that many steps to the left and AND-operate it with the mask. If the result is 0 the resulting byte is the current byte substracted by one, otherwise the resulting byte is the same as the current byte
+The first byte in every group is the mask for its’ respective group. The remaining bytes are all labeled from 1 to 7. You then go through each byte,
+AND-operate the mask with 2 to the power of the bytes’ position. If the result is 0, then resulting byte is the current byte substracted by one (1), otherwise the resulting byte is the same as the current byte
 
 Assume the complete encoded data is the following (hexadecimal):
     01 03 49 07 01 01 7d 01 (group 1)
@@ -190,7 +191,48 @@ Pseudocode:
                     resultByte is byte
 
 ##### How to encode decoded data
-??? to do later
+Assume a mask of 1. Go through all bytes in groups of 7. At the end of each group iteration insert the current mask at the start of the group (making the group 8 bytes long) and reset the mask to 1. If the current byte is even, then the resulting byte is the current byte plus one (1). Otherwise the resulting byte is the same as the current byte, and the new mask is the current mask OR-operated with 2 to the power of the bytes’ position within the group.
+
+Assume the complete non-encoded data is the following (hexadecimal):
+    02 48 06 00 00 7C 00
+    7C 00 A3 DF 1C 42 4D
+
+Encoding the first group:
+    Mask: 01
+    Data: 02 48 06 00 00 7C 00
+    02 ==> 7C % 2 == 0 ==> 03
+    48 ==> 48 % 2 == 0 ==> 49
+    … and so on.
+    Mask: 01
+    Result: 01 03 49 07 01 01 7D 01
+
+Encoding the second group:
+    Mask: 01
+    Data: 7C 00 A3 DF 1C 42 4D
+    7C ==> 7C % 2 == 0 ==> 7D
+    00 ==> 00 % 2 == 0 ==> 01
+    A3 ==> A3 % 2 /= 0 ==> A3
+        Mask: 1 | 2 ^ 3 = 9
+    DF ==> DF % 2 /= 0 ==> DF
+        Mask: 9 | 2 ^ 4 = 25
+    …
+    4D ==> 4D % 2 /= 0 ==> 4D
+        Mask: 25 | 2 ^ 7 = 153 (0x99)
+    Result: 99 7D 01 A3 DF 1D 43 4D
+    
+Pseudocode:
+    result = []
+    mask = 1
+    foreach byte with index in data:
+        if even data:
+            result[] = byte + 1
+        else
+            result[] = byte
+            mask = mask | 2 ^ index
+        
+        if index is end of group OR index is end of data:
+            result[insert before group] = mask
+            mask = 1
 
 ##### Decoded data
 The first nine (9) bytes are game flags. Bytes 10 to 13 (inclusive) is the map checksum. After that follows the map path (as a null-terminated string) and the hosts’ player name (null-terminated string). Finally there is a null-byte to signal end of coded data.
@@ -200,14 +242,14 @@ The first nine (9) bytes are game flags. Bytes 10 to 13 (inclusive) is the map c
     - 1 = Normal
     - 2 = Fast
 - (1 byte) Visibility, flag bits:
-    - 1: Hide terrain
-    - 2: Map fully explored
-    - 3: No fog of war
-    - 4: Default
+    - 1 [1]: Hide Terrain
+    - 2 [2]: Map Explored
+    - 3 [4]: Always Visible (no fog of war)
+    - 4 [8]: Default
     - 5, 6:
-        - None   (0) = Off or “Referees” (see Units, bit #6)
+        - None   (0) = "No Observers" or “Referees” (see Units, bit #6)
         - Just 6 (2) = Observer on Defeat
-        - Both   (3) = On or “Referees” (see Units, bit #6)
+        - Both   (3) = "Full Observers" or “Referees” (see Units, bit #6)
     - 7: Teams Together (team members are placed close to each other)
 - (1 byte) Fixed teams, possible values:
     - 0 = Off
@@ -218,11 +260,12 @@ The first nine (9) bytes are game flags. Bytes 10 to 13 (inclusive) is the map c
     - 3: Random races
     - 6: Observer Referees (see 2)
 - (1 byte) 0
-- (2 bytes) Map width (?)
-- (2 byte) Map height (?)
-- (4 bytes) Map Checksum (CRC32?)
+- (2 bytes) Map width (? :: can be zero)
+- (2 byte) Map height (? :: can be zero)
+- (4 bytes) Map Checksum (CRC32 :: can be zero)
 - (x bytes) Map path (null terminated string)
 - (x bytes) Host player name (null terminated)
+- (1 bytes) Zero
 
 This is also listed in W3G_Format.txt, section 4.4.
 
@@ -239,6 +282,11 @@ Broadcasted every 5 seconds or slot change by the host. Basically “HELLO, THER
 - (4 bytes) Creation counter
 - (4 bytes) Players currently in game (including host)
 - (4 bytes) Total *OPEN* slots
+
+#### (0x33 :: Host -> Network) W3GS_LAN_DECREATEGAME [UDP]
+Broadcasted when the game is destroyed or started.
+
+- (4 bytes) Creation counter
 
 #### (0x3D :: Host -> Client) W3GS_MAPCHECK
 Host sends this to client after playerinfo on join event.
