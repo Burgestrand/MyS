@@ -78,7 +78,7 @@ w3GS_LAN_GAMEINFO gameName = assignLength $ runPut $
        putLazyByteString $ fromString gameName    
        putWord8          0x00                     -- Null terminator for game name
        putWord8          0x00                     -- Start of encoded data
-       putLazyByteString $ BL.pack $ concat $ map encodeGameInfo $ groupX 7 $ BL.unpack gameInfo
+       putLazyByteString $ BL.pack $ concat $ map encodeGameInfo $ split 7 $ BL.unpack gameInfo
        putWord8          0x00
        putWord32le       0x0A                     -- Total game slots (10)
        putWord32le       0x01                     -- Game type
@@ -103,10 +103,10 @@ decodeGameInfo (mask:xs) = [ real x i | (i, x) <- zip [1..] xs ]
                      else x
 
 -- | Make groups of n’s of xs
-groupX :: Int -> [a] -> [[a]]
-groupX n xs = unfoldr f xs
-            where f xs | null xs   = Nothing
-                       | otherwise = Just . splitAt n $ xs
+split :: Int -> [a] -> [[a]]
+split n = unfoldr f
+        where f xs | null xs   = Nothing
+                   | otherwise = Just (splitAt n xs)
 
 -- | Takes a ByteString and turns it into a String for sending
 packet :: Packet -> String
