@@ -111,7 +111,7 @@ This is sent to a host to join the game.
 - (2 bytes) AF_INET (0x0200, can be 0)
 - (2 bytes) Internal port (can be 0)
 - (4 bytes) IPv4 (can be 0)
-- (8 bytes) IPv6
+- (8 bytes) IPv6-filling?
 
 #### (0x2F :: Client -> Network) W3GS_LAN_SEARCHGAME [UDP]
 Searches for LAN games. Broadcasted (once) when entering LAN lobby.
@@ -126,6 +126,7 @@ Response to a client’s game search.
 - (4 bytes) Game signature 
 - (4 bytes) Game version
 - (4 bytes) Creation counter
+- (4 bytes) Unknown
 - (x bytes) Game name (UTF8, null terminated)
 - (1 bytes) Zero
 - Encoded data (encoding / decoding info below)
