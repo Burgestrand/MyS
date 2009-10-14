@@ -1,6 +1,7 @@
 # Table of Contents
 1. Introduction
 2. Abstract
+3. Warcraft III
 
 ## Introduction
 Here I plan to document all information about WC3 packets that I find during my programming project.
@@ -18,6 +19,8 @@ All packets categorised first by game, “signature”, and then grouped by type
 
 Each packet section begins with a short description of what the packet represents and then a diagram of the packet as a whole accompanied by a break-down of its’ components. If both the server and the client sends this packet, both cases are described independent of one another.
 
+* * * * *
+
 ### Warcraft III (0xF7)
 Game signature for TFT: W3XP ==> PX3W ==> 0x50583357
 
@@ -31,15 +34,15 @@ Game signature for TFT: W3XP ==> PX3W ==> 0x50583357
 5. The clients’ map and the hosts’ map is cross-checked. Possible download after this.
 6. Done.
 
-#### (0x00) SID_NULL
+### (0x00) SID_NULL
 No data, just a header.
 
 If the server sends this, reply with the same packet. If this packet has not been received then make sure to send one of these once every eight (8) minutes or so, to keep the connection alive. 
 
-#### (0x02) SID_STOPADV
+### (0x02) SID_STOPADV
 This message is sent to inform the server that a game should no longer be advertised to other users. It is sent when a game starts, or when a game is aborted (the host leaves).
 
-#### (0x04 :: Host -> Client) W3GS_ACCEPTJOIN
+### (0x04 :: Host -> Client) W3GS_ACCEPTJOIN
 Sent as a reply to W3GS_REQJOIN if the player is allowed to join the game.
 
 - (x bytes) W3GS_SLOTINFO (optional contents, size and total slots can be 0)
@@ -49,7 +52,7 @@ Sent as a reply to W3GS_REQJOIN if the player is allowed to join the game.
 - (4 bytes) IPv4
 - (8 bytes) IPv6
 
-#### (0x06 :: Host -> Client) W3GS_PLAYERINFO
+### (0x06 :: Host -> Client) W3GS_PLAYERINFO
 - (4 bytes) Players’ join counter
 - (1 bytes) Players’ ID
 - (x bytes) Player name (null terminated)
@@ -63,7 +66,7 @@ Sent as a reply to W3GS_REQJOIN if the player is allowed to join the game.
 - (4 bytes) Players’ internal IPv4
 - (8 bytes) Players’ internal IPv6
  
-#### (0x09 :: Host -> Client) W3GS_SLOTINFO
+### (0x09 :: Host -> Client) W3GS_SLOTINFO
 Information about all slots, sent on slot changes.
 
 - (2 bytes) Size of slotinfo block
@@ -93,12 +96,12 @@ Information about all slots, sent on slot changes.
     - (1 bytes) Game type (0 = Regular game, 3 = Custom game, 0xcc = Ladder)
     - (1 bytes) Count of slots again, end tag
 
-#### (0x1C :: Host -> Client) W3GS_KICK
+### (0x1C :: Host -> Client) W3GS_KICK
 Kicks a client.
 
 - (4 bytes) Unknown (0x0d000000)
 
-#### (0x1E :: Client -> Host) W3GS_REQJOIN
+### (0x1E :: Client -> Host) W3GS_REQJOIN
 This is sent to a host to join the game.
 
 - (4 bytes) Hosts’ host count (must match)
@@ -113,14 +116,14 @@ This is sent to a host to join the game.
 - (4 bytes) IPv4 (can be 0)
 - (8 bytes) IPv6-filling?
 
-#### (0x2F :: Client -> Network) W3GS_LAN_SEARCHGAME [UDP]
+### (0x2F :: Client -> Network) W3GS_LAN_SEARCHGAME [UDP]
 Searches for LAN games. Broadcasted (once) when entering LAN lobby.
 
 - (4 bytes) Game signature
 - (4 bytes) Game version
 - (4 bytes) Zeroes
 
-#### (0x30 :: Host -> Client) W3GS_LAN_GAMEINFO [UDP]
+### (0x30 :: Host -> Client) W3GS_LAN_GAMEINFO [UDP]
 Response to a client’s game search.
 
 - (4 bytes) Game signature 
@@ -154,7 +157,7 @@ Response to a client’s game search.
 - (4 bytes) Game uptime in seconds
 - (2 bytes) Hosts’ port
 
-##### How to decode the encoded data
+#### How to decode the encoded data
 Arrange the bytes in group of eight. Decoding works like this:
 The first byte in every group is the mask for its’ respective group. The remaining bytes are all labeled from 1 to 7. You then go through each byte,
 AND-operate the mask with 2 to the power of the bytes’ position. If the result is 0, then resulting byte is the current byte substracted by one (1), otherwise the resulting byte is the same as the current byte
@@ -191,7 +194,7 @@ Pseudocode:
                 else
                     resultByte is byte
 
-##### How to encode decoded data
+#### How to encode decoded data
 Assume a mask of 1. Go through all bytes in groups of 7. At the end of each group iteration insert the current mask at the start of the group (making the group 8 bytes long) and reset the mask to 1. If the current byte is even, then the resulting byte is the current byte plus one (1). Otherwise the resulting byte is the same as the current byte, and the new mask is the current mask OR-operated with 2 to the power of the bytes’ position within the group.
 
 Assume the complete non-encoded data is the following (hexadecimal):
@@ -235,7 +238,7 @@ Pseudocode:
             result[insert before group] = mask
             mask = 1
 
-##### Decoded data
+#### Decoded data
 The first nine (9) bytes are game flags. Bytes 10 to 13 (inclusive) is the map checksum. After that follows the map path (as a null-terminated string) and the hosts’ player name (null-terminated string). Finally there is a null-byte to signal end of coded data.
 
 - (1 byte) Game speed, possible values:
@@ -270,26 +273,26 @@ The first nine (9) bytes are game flags. Bytes 10 to 13 (inclusive) is the map c
 
 This is also listed in W3G_Format.txt, section 4.4.
 
-#### (0x31 :: Host -> Network) W3GS_LAN_CREATEGAME [UDP]
+### (0x31 :: Host -> Network) W3GS_LAN_CREATEGAME [UDP]
 Broadcasted to the network (255.255.255.255) when a LAN game is created.
 
 - (4 bytes) Game signature
 - (4 bytes) Game version
 - (4 bytes) Creation counter
 
-#### (0x32 :: Host -> Network) W3GS_LAN_REFRESHGAME [UDP]
+### (0x32 :: Host -> Network) W3GS_LAN_REFRESHGAME [UDP]
 Broadcasted every 5 seconds or slot change by the host. Basically “HELLO, THERE IS A GAME HERE!”
 
 - (4 bytes) Creation counter
 - (4 bytes) Players currently in game (including host)
 - (4 bytes) Total *OPEN* slots
 
-#### (0x33 :: Host -> Network) W3GS_LAN_DECREATEGAME [UDP]
+### (0x33 :: Host -> Network) W3GS_LAN_DECREATEGAME [UDP]
 Broadcasted when the game is destroyed or started.
 
 - (4 bytes) Creation counter
 
-#### (0x3D :: Host -> Client) W3GS_MAPCHECK
+### (0x3D :: Host -> Client) W3GS_MAPCHECK
 Host sends this to client after playerinfo on join event.
 
 - (4 bytes) Unknown (0x01000000)
@@ -299,7 +302,7 @@ Host sends this to client after playerinfo on join event.
 - (4 bytes) Map CRC32
 - (20 bytes) Map SHA1
 
-#### (0x42 :: Client -> Host) W3GS_MAPSIZE
+### (0x42 :: Client -> Host) W3GS_MAPSIZE
 Client sends this to host on response of W3GS_MAPCHECK.
 
 - (4 bytes) Unknown (0x01000000)
