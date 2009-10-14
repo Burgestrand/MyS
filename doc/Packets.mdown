@@ -19,8 +19,6 @@ All packets categorised first by game, “signature”, and then grouped by type
 
 Each packet section begins with a short description of what the packet represents and then a diagram of the packet as a whole accompanied by a break-down of its’ components. If both the server and the client sends this packet, both cases are described independent of one another.
 
-* * * * *
-
 ## Warcraft III (0xF7)
 This section contains Warcraft III packets; that is the ones with packet ID `0xF7`.
 
@@ -35,14 +33,6 @@ This section contains Warcraft III packets; that is the ones with packet ID `0xF
     Acceptjoin contains some useful information, such as the occupied slots and the clients’ player ID.
 5. The clients’ map and the hosts’ map is cross-checked. Possible download after this.
 6. Done.
-
-### (0x00) SID_NULL
-No data, just a header.
-
-If the server sends this, reply with the same packet. If this packet has not been received then make sure to send one of these once every eight (8) minutes or so, to keep the connection alive. 
-
-### (0x02) SID_STOPADV
-This message is sent to inform the server that a game should no longer be advertised to other users. It is sent when a game starts, or when a game is aborted (the host leaves).
 
 ### (0x04 :: Host -> Client) W3GS_ACCEPTJOIN
 Sent as a reply to W3GS_REQJOIN if the player is allowed to join the game.
