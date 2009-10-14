@@ -8,12 +8,9 @@ Here I plan to document all information about WC3 packets that I find during my 
 ## Abstract
 All the WC3 (Battle.net, really) packets follow a simple structure:
 
-      0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
-    +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-    |       Signature       |    Packet Signature   |
-    +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-    |                 Packet Length                 |
-    +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+- (1 byte) Signature
+- (1 byte) Packet signature
+- (2 bytes) Packet length
 
 We first have the signature plus packet signature. These two uniquely identifies what type of packet we're dealing with. Each type must be handled individually. The packet length indicates the size of the packet, which is the size of the header (4) plus its’ data. Also, do note that all numeric values are little endian.
 
@@ -27,7 +24,12 @@ Game signature for TFT: W3XP ==> PX3W ==> 0x50583357
 #### Creating a LAN game and joining it
 
 1. Client goes into LAN lobby and sends out LAN_SEARCHGAME
-2. A game is already hosted, picks up on the LAN\_SEARCHGAME broadcast and responds with LAN_GAMEINFO.
+2. A game is already hosted, picks up on the LAN_SEARCHGAME broadcast and responds with LAN_GAMEINFO.
+3. Client requests to join a specific game by W3GS_REQJOIN
+4. Client is accepted or rejected: W3GS_ACCEPTJOIN
+    Acceptjoin contains some useful information, such as the occupied slots and the clients’ player ID.
+5. The clients’ map and the hosts’ map is cross-checked. Possible download after this.
+6. Done.
 
 #### (0x00) SID_NULL
 No data, just a header.
@@ -48,7 +50,6 @@ Sent as a reply to W3GS_REQJOIN if the player is allowed to join the game.
 - (8 bytes) IPv6
 
 #### (0x06 :: Host -> Client) W3GS_PLAYERINFO
-
 - (4 bytes) Players’ join counter
 - (1 bytes) Players’ ID
 - (x bytes) Player name (null terminated)
@@ -62,7 +63,6 @@ Sent as a reply to W3GS_REQJOIN if the player is allowed to join the game.
 - (4 bytes) Players’ internal IPv4
 - (8 bytes) Players’ internal IPv6
  
-
 #### (0x09 :: Host -> Client) W3GS_SLOTINFO
 Information about all slots, sent on slot changes.
 
@@ -71,23 +71,23 @@ Information about all slots, sent on slot changes.
         - (1 bytes) Player ID (1 = host, 0 = empty / computer)
         - (1 bytes) Download % (0 - 100)
         - (1 bytes) Slot status
-            - 0 = Open
-            - 1 = Closed
-            - 2 = Controlled
+            - 0 -> Open
+            - 1 -> Closed
+            - 2 -> Controlled
         - (1 bytes) AI Controlled (1 = Yes, 0 = No [Human / Open / Closed])
         - (1 bytes) Team number (0 - 11; 12 = Free / Observer / Referee)
         - (1 bytes) Color number (0 - 11; 12 = Free / Observer / Referee)
         - (1 bytes) Race
-            - 0x01 = Human
-            - 0x02 = Orc
-            - 0x04 = Night Elf
-            - 0x08 = Undead
-            - 0x20 = Random
-            - 0x40 = Race selected or fixed by map or ladder game
+            - 0x01 -> Human
+            - 0x02 -> Orc
+            - 0x04 -> Night Elf
+            - 0x08 -> Undead
+            - 0x20 -> Random
+            - 0x40 -> Race selected or fixed by map or ladder game
         - (1 bytes) Controller type
-            - 0 = Easy computer
-            - 1 = Human / Normal computer
-            - 2 = Hard computer
+            - 0 -> Easy computer
+            - 1 -> Human / Normal computer
+            - 2 -> Hard computer
         - (1 bytes) Handicap, values: 50, 60, 70, 80, 90, 100
     - (4 bytes) Win32 GetTickCount (uptime)
     - (1 bytes) Game type (0 = Regular game, 3 = Custom game, 0xcc = Ladder)
@@ -133,22 +133,22 @@ Response to a client’s game search.
 - (1 bytes) Zero
 - (4 bytes) Total game slots
 - (4 bytes) Game type
-    - 01 = Custom
-    - 09 = Blizzard / Ladder
+    - 01 -> Custom
+    - 09 -> Blizzard / Ladder
     - Unused values:
-        - 02 = Melee
-        - 03 = FFA
-        - 04 = 1v1
-        - 05 = CTF
-        - 06 = Greed
-        - 07 = Slaughter
-        - 08 = Sudden Death
-        - 10 = Iron Man Ladder
-        - 0A = Map settings
-        - 0B = Team melee
-        - 0C = Team FFA
-        - 0D = Team CTF
-        - 0F = Top vs Bottom
+        - 02 -> Melee
+        - 03 -> FFA
+        - 04 -> 1v1
+        - 05 -> CTF
+        - 06 -> Greed
+        - 07 -> Slaughter
+        - 08 -> Sudden Death
+        - 10 -> Iron Man Ladder
+        - 0A -> Map settings
+        - 0B -> Team melee
+        - 0C -> Team FFA
+        - 0D -> Team CTF
+        - 0F -> Top vs Bottom
 - (4 bytes) Unknown, always 0x01000000
 - (4 bytes) Open (available) slots
 - (4 bytes) Game uptime in seconds
@@ -239,22 +239,22 @@ Pseudocode:
 The first nine (9) bytes are game flags. Bytes 10 to 13 (inclusive) is the map checksum. After that follows the map path (as a null-terminated string) and the hosts’ player name (null-terminated string). Finally there is a null-byte to signal end of coded data.
 
 - (1 byte) Game speed, possible values:
-    - 0 = Slow
-    - 1 = Normal
-    - 2 = Fast
+    - 0 -> Slow
+    - 1 -> Normal
+    - 2 -> Fast
 - (1 byte) Visibility, flag bits:
     - 1 [1]: Hide Terrain
     - 2 [2]: Map Explored
     - 3 [4]: Always Visible (no fog of war)
     - 4 [8]: Default
     - 5, 6:
-        - None   (0) = "No Observers" or “Referees” (see Units, bit #6)
-        - Just 6 (2) = Observer on Defeat
-        - Both   (3) = "Full Observers" or “Referees” (see Units, bit #6)
+        - None  (0) ->"No Observers" or “Referees” (see Units, bit #6)
+        - Just 6 (2) -> Observer on Defeat
+        - Both   (3) -> "Full Observers" or “Referees” (see Units, bit #6)
     - 7: Teams Together (team members are placed close to each other)
 - (1 byte) Fixed teams, possible values:
-    - 0 = Off
-    - 6 = On
+    - 0 -> Off
+    - 6 -> On
 - (1 byte) Units, flag bits:
     - 1: Full shared unit control
     - 2: Random hero
@@ -304,6 +304,6 @@ Client sends this to host on response of W3GS_MAPCHECK.
 
 - (4 bytes) Unknown (0x01000000)
 - (1 bytes) Size flag
-    - 1 = Have map (happens on map check or finished download)
-    - 3 = Continue download (happens efter every W3GS_MAPPARTOK)
+    - 1 -> Have map (happens on map check or finished download)
+    - 3 -> Continue download (happens efter every W3GS_MAPPARTOK)
 - (4 bytes) Map file size OR, if size flag is 3, start location of next part
