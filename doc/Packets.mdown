@@ -21,11 +21,13 @@ Each packet section begins with a short description of what the packet represent
 
 * * * * *
 
-### Warcraft III (0xF7)
-Game signature for TFT: W3XP ==> PX3W ==> 0x50583357
+## Warcraft III (0xF7)
+This section contains Warcraft III packets; that is the ones with packet ID `0xF7`.
 
-#### Creating a LAN game and joining it
+### Notes
+- Game signature for TFT: W3XP is `PX3W` (0x50583357)
 
+### Creating a LAN game and joining it
 1. Client goes into LAN lobby and sends out LAN_SEARCHGAME
 2. A game is already hosted, picks up on the LAN_SEARCHGAME broadcast and responds with LAN_GAMEINFO.
 3. Client requests to join a specific game by W3GS_REQJOIN
@@ -157,44 +159,42 @@ Response to a client’s game search.
 - (4 bytes) Game uptime in seconds
 - (2 bytes) Hosts’ port
 
-#### How to decode the encoded data
-Arrange the bytes in group of eight. Decoding works like this:
-The first byte in every group is the mask for its’ respective group. The remaining bytes are all labeled from 1 to 7. You then go through each byte,
-AND-operate the mask with 2 to the power of the bytes’ position. If the result is 0, then resulting byte is the current byte substracted by one (1), otherwise the resulting byte is the same as the current byte
+##### Decoded data
+The first nine (9) bytes are game flags. Bytes 10 to 13 (inclusive) is the map checksum. After that follows the map path (as a null-terminated string) and the hosts’ player name (null-terminated string). Finally there is a null-byte to signal end of coded data.
 
-Assume the complete encoded data is the following (hexadecimal):
-    01 03 49 07 01 01 7d 01 (group 1)
-    99 7d 01 a3 df 1d 43 4d (group 2)
+- (1 byte) Game speed, possible values:
+    - 0 -> Slow
+    - 1 -> Normal
+    - 2 -> Fast
+- (1 byte) Visibility, flag bits:
+    - 1 [1]: Hide Terrain
+    - 2 [2]: Map Explored
+    - 3 [4]: Always Visible (no fog of war)
+    - 4 [8]: Default
+    - 5, 6:
+        - None  (0) ->"No Observers" or “Referees” (see Units, bit #6)
+        - Just 6 (2) -> Observer on Defeat
+        - Both   (3) -> "Full Observers" or “Referees” (see Units, bit #6)
+    - 7: Teams Together (team members are placed close to each other)
+- (1 byte) Fixed teams, possible values:
+    - 0 -> Off
+    - 6 -> On
+- (1 byte) Units, flag bits:
+    - 1: Full shared unit control
+    - 2: Random hero
+    - 3: Random races
+    - 6: Observer Referees (see 2)
+- (1 byte) 0
+- (2 bytes) Map width (? :: can be zero)
+- (2 byte) Map height (? :: can be zero)
+- (4 bytes) Map Checksum (CRC32 :: can be zero)
+- (x bytes) Map path (null terminated string)
+- (x bytes) Host player name (null terminated)
+- (1 bytes) Zero
 
-Decoding the first group:
-    Mask: 01 = 0000 0001
-    Data: 03 49 07 01 01 7d 01
-    03 ==> 1 & (1 << 1) ==>   01 &   10 = 0 ==> 03 - 1 = 02
-    49 ==> 1 & (1 << 2) ==> 0001 & 0100 = 0 ==> 49 - 1 = 48
-    … the mask is 1 and all binary shift operations are even numbers.
-    Result: 02 48 06 00 00 7C 00
+This is also listed in W3G_Format.txt, section 4.4.
 
-Decoding second group:
-    Mask: 99 = 1001 1001
-    Data: 7d 01 a3 df 1d 43 4d
-    7d ==> 1001 1001 & (1 << 1) ==> 0x99 & 0x02 = 0 ==> 7d - 1 = 7C
-    01 ==> 1001 1001 & (1 << 2) ==> 0x99 & 0x04 = 0 ==> 01 - 1 = 00
-    a3 ==> 1001 1001 & (1 << 3) ==> 0x99 & 0x08 = 8 ==> a3 - 0 = a3
-    … and so on.
-    Result: 7C 00 A3 DF 1C 42 4D
-
-Pseudocode:
-    forall groups
-        foreach byte with index in group
-            if index "modulo" 8 then
-                mask is byte
-            else
-                if mask AND (1 "lshift" index) is 0
-                    resultByte is (byte - 1)
-                else
-                    resultByte is byte
-
-#### How to encode decoded data
+##### How to encode decoded data
 Assume a mask of 1. Go through all bytes in groups of 7. At the end of each group iteration insert the current mask at the start of the group (making the group 8 bytes long) and reset the mask to 1. If the current byte is even, then the resulting byte is the current byte plus one (1). Otherwise the resulting byte is the same as the current byte, and the new mask is the current mask OR-operated with 2 to the power of the bytes’ position within the group.
 
 Assume the complete non-encoded data is the following (hexadecimal):
@@ -238,40 +238,42 @@ Pseudocode:
             result[insert before group] = mask
             mask = 1
 
-#### Decoded data
-The first nine (9) bytes are game flags. Bytes 10 to 13 (inclusive) is the map checksum. After that follows the map path (as a null-terminated string) and the hosts’ player name (null-terminated string). Finally there is a null-byte to signal end of coded data.
+##### How to decode the encoded data
+Arrange the bytes in group of eight. Decoding works like this:
+The first byte in every group is the mask for its’ respective group. The remaining bytes are all labeled from 1 to 7. You then go through each byte,
+AND-operate the mask with 2 to the power of the bytes’ position. If the result is 0, then resulting byte is the current byte substracted by one (1), otherwise the resulting byte is the same as the current byte
 
-- (1 byte) Game speed, possible values:
-    - 0 -> Slow
-    - 1 -> Normal
-    - 2 -> Fast
-- (1 byte) Visibility, flag bits:
-    - 1 [1]: Hide Terrain
-    - 2 [2]: Map Explored
-    - 3 [4]: Always Visible (no fog of war)
-    - 4 [8]: Default
-    - 5, 6:
-        - None  (0) ->"No Observers" or “Referees” (see Units, bit #6)
-        - Just 6 (2) -> Observer on Defeat
-        - Both   (3) -> "Full Observers" or “Referees” (see Units, bit #6)
-    - 7: Teams Together (team members are placed close to each other)
-- (1 byte) Fixed teams, possible values:
-    - 0 -> Off
-    - 6 -> On
-- (1 byte) Units, flag bits:
-    - 1: Full shared unit control
-    - 2: Random hero
-    - 3: Random races
-    - 6: Observer Referees (see 2)
-- (1 byte) 0
-- (2 bytes) Map width (? :: can be zero)
-- (2 byte) Map height (? :: can be zero)
-- (4 bytes) Map Checksum (CRC32 :: can be zero)
-- (x bytes) Map path (null terminated string)
-- (x bytes) Host player name (null terminated)
-- (1 bytes) Zero
+Assume the complete encoded data is the following (hexadecimal):
+    01 03 49 07 01 01 7d 01 (group 1)
+    99 7d 01 a3 df 1d 43 4d (group 2)
 
-This is also listed in W3G_Format.txt, section 4.4.
+Decoding the first group:
+    Mask: 01 = 0000 0001
+    Data: 03 49 07 01 01 7d 01
+    03 ==> 1 & (1 << 1) ==>   01 &   10 = 0 ==> 03 - 1 = 02
+    49 ==> 1 & (1 << 2) ==> 0001 & 0100 = 0 ==> 49 - 1 = 48
+    … the mask is 1 and all binary shift operations are even numbers.
+    Result: 02 48 06 00 00 7C 00
+
+Decoding second group:
+    Mask: 99 = 1001 1001
+Data: 7d 01 a3 df 1d 43 4d
+    7d ==> 1001 1001 & (1 << 1) ==> 0x99 & 0x02 = 0 ==> 7d - 1 = 7C
+    01 ==> 1001 1001 & (1 << 2) ==> 0x99 & 0x04 = 0 ==> 01 - 1 = 00
+    a3 ==> 1001 1001 & (1 << 3) ==> 0x99 & 0x08 = 8 ==> a3 - 0 = a3
+    … and so on.
+    Result: 7C 00 A3 DF 1C 42 4D
+
+Pseudocode:
+    forall groups
+        foreach byte with index in group
+            if index "modulo" 8 then
+                mask is byte
+            else
+                if mask AND (1 "lshift" index) is 0
+                    resultByte is (byte - 1)
+                else
+                    resultByte is byte
 
 ### (0x31 :: Host -> Network) W3GS_LAN_CREATEGAME [UDP]
 Broadcasted to the network (255.255.255.255) when a LAN game is created.
