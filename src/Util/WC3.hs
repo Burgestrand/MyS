@@ -1,3 +1,7 @@
+{-|
+    Utility functions for WC3 packets. To be moved to same location as protocol
+    handling code.
+-}
 module Util.WC3 (
     encode, decode, encoder, decoder, mapChunks
 ) where

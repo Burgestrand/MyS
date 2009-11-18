@@ -1,13 +1,11 @@
+{-|
+    A common interface to the applications’ Configuration. Could be either a
+    textfile, database or something similar.
+-}
 module Configuration where
 
--- Imports
-------------------------------------------------------------------------------
-
--- Standard
 import System.IO.Unsafe
 import System.Environment (getArgs)
-
--- Local
 import Ext.Text.Read
 import Util.Ternary
 
@@ -16,9 +14,8 @@ import Util.Ternary
 {-# NOINLINE pureArgs #-}
 pureArgs :: [String]
 pureArgs = unsafePerformIO getArgs
-
--- Configuration!
 ------------------------------------------------------------------------------
+
 data Configuration = Configuration {
                          host :: String,
                          port :: Integer

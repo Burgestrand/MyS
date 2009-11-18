@@ -1,4 +1,4 @@
-{-
+{-|
     This module contains code that announces an existing server
     to the network.
 -}

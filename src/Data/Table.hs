@@ -1,15 +1,10 @@
 module Data.Table where
 
--- For binary instances
 import Data.Binary (Binary, Get, Put, put, get)
-
 import Data.Map (Map)
 import qualified Data.Map as Map
-
--- | Table type
 type Table k v = (Map k v, Map v k)
 
--- | Create a table
 mkTable :: (Ord k, Ord a) => [ (k, a) ] -> Table k a
 mkTable table = (Map.fromList table, Map.fromList . map switch $ table)
     where switch (a, b) = (b, a)
@@ -22,14 +17,14 @@ lookupKey (map, _) k = Map.lookup k map
 lookupValue :: (Ord v) => Table k v -> v -> Maybe k
 lookupValue (_, map) v = Map.lookup v map
 
--- | Binary put value
+-- | Encodes a value to binary.
 putTable :: (Binary k, Ord a, Show a) => Table k a -> a -> Put
 putTable table value = 
   case lookupValue table value of
     Just n  -> put n
     Nothing -> error $ "no key for value " ++ show value
 
--- | A binary get value
+-- | Decodes a binary value (key) to a table value.
 getTable :: (Binary k, Ord k, Show k) => Table k a -> Get a
 getTable table = do
       num <- get

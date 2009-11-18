@@ -1,30 +1,35 @@
-module Client where
+{-|
+    This module provides the full client interface. It handles receiving and
+    responding to various packets, and talks to the server through channels.
+    
+    Main entry point is the 'handle' function.
+-}
+module Client (
+    Client,
+    handle
+) where
 
--- Imports
-------------------------------------------------------------------------------
 import Common
-
--- Threads
 import Control.Concurrent
-
--- Transformers
 import MonadLib
-
--- Networking
 import Ext.Network.Socket
 
 -- Types
 ------------------------------------------------------------------------------
 
--- | (to client, from client)
 data Client = Client {
-        stdin  :: Messages,
+        -- | Messages from anyone to Client
+        stdin  :: Messages
+        -- | Messages from Client to anyone
         stdout :: Messages,
+        -- | The clients’ (most likely connected) socket
         sock   :: Socket
     } deriving (Show)
 
 -- Functions
 ------------------------------------------------------------------------------
+
+-- | Creates a new Client with the specified socket.
 mkClient :: Socket -> IO Client
 mkClient sock = do
     stdin  <- newIO
@@ -34,6 +39,8 @@ mkClient sock = do
                   , sock   = sock }
 
 -- | Handle a socket.
+--   Spawns a new thread, running the client in it. The function itself returns
+--   immediately.
 handle :: Socket -> IO (Client, ThreadId)
 handle sock = do
     client <- mkClient sock
@@ -56,13 +63,14 @@ clientHandler = do
 -- Client Monad utility
 ------------------------------------------------------------------------------
 
--- | Read the clients’ input channel.
+-- | Read the clients’ input channel. Waits if there is no data available.
 getMessage :: ClientM Message
 getMessage = do
     chan <- asks stdin
     inBase $ receiveIO chan
 
--- | Write to the clients’ output channel.
+-- | Write to the clients’ output channel. Waits if there’s 100+ messages in
+--   in the buffer.
 putMessage :: Message -> ClientM ()
 putMessage msg = do
     chan <- asks stdout

@@ -1,3 +1,4 @@
+--| A simplified interface to the hslogger module.
 module Util.Log (
     initLogger,
     debugM,
@@ -11,19 +12,12 @@ module Util.Log (
     Priority(..)
 ) where
 
--- File handling
 import System.IO
-
--- Logging
 import System.Log.Logger
 import System.Log.Handler.Simple
-
--- Log file naming
 import Data.Time (getZonedTime)
 import Data.Time.Format (FormatTime, formatTime)
 import System.Locale (defaultTimeLocale)
-
-{- | A simplified interface to the hslogger module. -}
 
 -- | Creates the logfile: ./Logs/My-YYYY-MM-DD-HH:mm:ss.log
 --   Logging level set to DEBUG.
