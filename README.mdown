@@ -16,7 +16,6 @@ in the current release and later.
 ### Git
 - The first line should:
     - be short (50~ characters)
-    - be written in present tense (what it does, not what it did)
     - describe the end result rather than the means
 
 The following paragraphs ought to be written using Markdown syntax. 
@@ -36,7 +35,7 @@ something new to the understanding of the associated section.
 
 Avoid using more than one sentence in the first line of a comment, and  
 do not use an ending dot on the first line. Except for that, Markdown is  
-used here too.  
+used here too.
 
 Give examples. Obvious code is not obvious unless [Captain Obvious][]  
 approves it.
