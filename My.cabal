@@ -4,11 +4,11 @@ Synopsis:       A Warcraft III network hosting bot written in Haskell.
 Description:    I love gaming, I love haskell. I decided to write a game server
                 for the game Warcraft III. It is capable of running LAN games,
                 as well as announcing them to Battle.net for online play.
-Category:       Network, Game
+Category:       Game
 
 License:        GPL
 License-file:   LICENSE
-data-files:     README
+data-files:     README.mdown, gpl.txt
 
 Author:         Kim Burgestrand
 Maintainer:     kim@burgestrand.se
