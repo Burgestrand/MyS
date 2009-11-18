@@ -27,6 +27,8 @@ Executable My
                     old-locale,
                     stm,
                     bytestring,
+                    containers,
+                    binary == 0.5.0.2,
                     network-bytestring == 0.1.2.1,
                     hslogger == 1.0.7,
                     monadLib == 3.5.2
@@ -35,4 +37,21 @@ Executable My
                     Client,
                     Common,
                     Communication,
-                    Configuration
+                    Configuration,
+                    Server,
+                    
+                    Data.Table,
+                    
+                    Ext.Control.Concurrent,
+                    Ext.Data.Binary,
+                    Ext.Data.ByteString,
+                    Ext.Data.List,
+                    Ext.Network.Socket,
+                    Ext.Text.Read,
+                    
+                    Network.BattleNet.Protocol,
+                    Network.BattleNet.Packets,
+                    
+                    Util.Log,
+                    Util.Ternary,
+                    Util.WC3
