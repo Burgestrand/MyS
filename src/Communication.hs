@@ -12,6 +12,7 @@ module Communication (
     -- ** STM
     new,
     receive,
+    peek,
     send,
     clone,
     count,
@@ -20,6 +21,7 @@ module Communication (
     -- | Same functions as above, but within the IO monad.
     newIO,
     receiveIO,
+    peekIO,
     sendIO,
     cloneIO,
     countIO,
@@ -41,7 +43,7 @@ instance Show Messages where
 data Message = Connect
              | Disconnect
              | Packet String -- Packet from Network.BattleNet.Packets
-    deriving (Show)
+    deriving (Show, Eq)
 
 -- | Creates a new Message channel.
 new :: STM Messages
@@ -73,9 +75,17 @@ clone (Messages (chan, count)) = do
     chan' <- dupTChan chan
     return $ Messages (chan', count)
 
+-- | Peek’s in a message channel; returning the next item without removing it
+peek :: Messages -> STM Message
+peek (Messages (chan, count)) = do
+    msg <- readTChan chan
+    unGetTChan chan msg
+    return msg
+
 -- Convenience: types
 newIO     :: IO Messages
 receiveIO :: Messages -> IO Message
+peekIO    :: Messages -> IO Message
 sendIO    :: Messages -> Message -> IO ()
 cloneIO   :: Messages -> IO Messages
 countIO   :: Messages -> IO Int
@@ -83,6 +93,7 @@ countIO   :: Messages -> IO Int
 -- Convenience. functions
 newIO      = atomically new
 receiveIO  = atomically . receive
+peekIO     = atomically . peek
 sendIO ch  = atomically . send ch
 cloneIO    = atomically . clone
 countIO    = atomically . count

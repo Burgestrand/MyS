@@ -7,7 +7,7 @@ module Configuration where
 import System.IO.Unsafe
 import System.Environment (getArgs)
 import Ext.Text.Read
-import Util.Ternary
+import Ext.Data.Bool
 
 -- UNSAFE
 ------------------------------------------------------------------------------

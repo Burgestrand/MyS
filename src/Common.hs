@@ -3,15 +3,19 @@
     subparts of My.
 -}
 module Common (
-    module Util.Log,
     module Communication,
     module Configuration,
-    module Util.Ternary,
-    module Data.Maybe
+    module Ext.Data.Bool,
+    module Ext.Control.Monad,
+    module Data.Maybe,
+    module Util.Log
 ) where
 
 import Communication
 import Configuration
+
 import Data.Maybe
 import Util.Log
-import Util.Ternary
+
+import Ext.Data.Bool
+import Ext.Control.Monad

@@ -44,25 +44,27 @@ type ClientM = ReaderT Client IO
 runClient :: Client -> IO ()
 runClient = flip runReaderT clientHandler
 
--- | Client handler.
+-- | Client handler
 clientHandler :: ClientM ()
 clientHandler = do
-    msg <- getMessage
-    inBase (print msg)
-    return ()
+    whileM continue process
+    inBase $ print "Bye bye"
+  where
+    continue = peekMessage >>= return . (/= Disconnect)
+    process  = do
+        msg <- getMessage
+        inBase $ print msg
 
--- | Read the clients’ input channel. Waits if there is no data available.
+-- | 'peekIO' in the Client monad
+peekMessage :: ClientM Message
+peekMessage = asks stdin >>= inBase . peekIO
+
+-- | 'receiveIO' in the Client monad
 getMessage :: ClientM Message
-getMessage = do
-    chan <- asks stdin
-    inBase $ receiveIO chan
+getMessage = asks stdin >>= inBase . receiveIO
 
--- | Write to the clients’ output channel. Waits if there’s 100+ messages in
---   in the buffer.
+-- | 'sendIO' in the Client monad
 putMessage :: Message -> ClientM ()
 putMessage msg = do
     chan <- asks stdout
-    inBase $ atomically $ do
-        n <- count chan
-        when (n > 100) retry -- max message queue
-        Common.send chan msg
+    inBase $ sendIO chan msg
