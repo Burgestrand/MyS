@@ -1,19 +1,18 @@
+{-|
+    A re-export of concurrency modules for easier access, and some of
+    my own additions.
+-}
 module Ext.Control.Concurrent (
     module Control.Concurrent,
-    
-    -- STM
     module Control.Concurrent.STM,
-    
-    -- Extras
     writeTMVar,
     modifyTMVar
 ) where
 
--- Exports
 import Control.Concurrent
 import Control.Concurrent.STM
 
--- | Modify the contents of a TMVar.
+-- | Modify the contents of a TMVar 
 modifyTMVar :: TMVar a -> (a -> a) -> STM ()
 modifyTMVar var f = do
     a <- takeTMVar var

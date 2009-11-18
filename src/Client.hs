@@ -1,8 +1,9 @@
 {-|
-    This module provides the full client interface. It handles receiving and
-    responding to various packets, and talks to the server through channels.
+    This module provides the full client interface.
     
-    Main entry point is the 'handle' function.
+    When a new connection is established the connected socket is passed
+    to the 'handle' function. After that communication to the client
+    is handled through the "Communication" module.
 -}
 module Client (
     Client,
@@ -11,23 +12,17 @@ module Client (
 
 import Common
 import Control.Concurrent
-import MonadLib
+import MonadLib hiding (handle)
 import Ext.Network.Socket
-
--- Types
-------------------------------------------------------------------------------
 
 data Client = Client {
         -- | Messages from anyone to Client
-        stdin  :: Messages
+        stdin  :: Messages,
         -- | Messages from Client to anyone
         stdout :: Messages,
         -- | The clients’ (most likely connected) socket
         sock   :: Socket
     } deriving (Show)
-
--- Functions
-------------------------------------------------------------------------------
 
 -- | Creates a new Client with the specified socket.
 mkClient :: Socket -> IO Client
@@ -38,17 +33,13 @@ mkClient sock = do
                   , stdout = stdout
                   , sock   = sock }
 
--- | Handle a socket.
---   Spawns a new thread, running the client in it. The function itself returns
---   immediately.
+-- | Client handler entry point; returns immediately.
 handle :: Socket -> IO (Client, ThreadId)
 handle sock = do
     client <- mkClient sock
     thread <- forkIO (runClient client)
     return (client, thread)
 
--- Client Handler
-------------------------------------------------------------------------------
 type ClientM = ReaderT Client IO
 runClient :: Client -> IO ()
 runClient = flip runReaderT clientHandler
@@ -59,9 +50,6 @@ clientHandler = do
     msg <- getMessage
     inBase (print msg)
     return ()
-
--- Client Monad utility
-------------------------------------------------------------------------------
 
 -- | Read the clients’ input channel. Waits if there is no data available.
 getMessage :: ClientM Message

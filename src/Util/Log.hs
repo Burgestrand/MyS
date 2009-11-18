@@ -1,4 +1,4 @@
---| A simplified interface to the hslogger module.
+-- | A simplified interface to the hslogger module.
 module Util.Log (
     initLogger,
     debugM,
@@ -19,7 +19,8 @@ import Data.Time (getZonedTime)
 import Data.Time.Format (FormatTime, formatTime)
 import System.Locale (defaultTimeLocale)
 
--- | Creates the logfile: ./Logs/My-YYYY-MM-DD-HH:mm:ss.log
+-- | Creates the logfile @.\/Logs\/My-YYYY-MM-DD-HH:mm:ss.log@
+--
 --   Logging level set to DEBUG.
 initLogger :: Priority -> IO ()
 initLogger level = do

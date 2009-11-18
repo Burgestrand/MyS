@@ -1,18 +1,12 @@
 module Network.BattleNet.Protocol where
 
--- | Standard library
 import Data.Maybe (fromJust, fromMaybe)
 import Data.Word
-
 import Data.ByteString.Lazy (ByteString)
 import qualified Data.ByteString.Lazy as Lazy
-
--- | Extra libraries
 import Ext.Data.Binary
 import Ext.Data.ByteString
 import Ext.Network.Socket (inet_ntoa, inet_aton, HostAddress)
-
--- | My own libraries
 import Data.Table
 import qualified Util.WC3 as Util
 
@@ -253,7 +247,7 @@ instance Binary Structure where
             put $ visibility struct
             put $ fixedTeams struct
             put $ units struct
-            put 0
+            put (0 :: Word8)
             put $ mapWidth struct
             put $ mapHeight struct
             put $ mapChecksum struct

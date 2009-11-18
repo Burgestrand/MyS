@@ -1,6 +1,9 @@
 {-|
     This module contains code that announces an existing server
     to the network.
+    
+    This is just a draft, and will eventually be replaced to a higher
+    level code base.
 -}
 module Announcer (startAnnouncer) where
 

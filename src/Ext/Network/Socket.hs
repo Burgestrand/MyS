@@ -5,20 +5,12 @@ module Ext.Network.Socket (
     inet_ntoa
 ) where
 
--- Exports
 import Network.Socket hiding (inet_ntoa, send, sendTo, recv, recvFrom)
 import Network.Socket.ByteString
-
--- Functions
 import Data.Bits
 import Data.List (intercalate)
-
 import Control.Monad
-
--- *** UNSAFE ***
-------------------------------------------------------------------------------
 import System.IO.Unsafe (unsafePerformIO)
-------------------------------------------------------------------------------
 
 -- | A pure inet_aton (uses unsafePerformIO)
 inet_aton :: String -> Maybe HostAddress
