@@ -1,0 +1,38 @@
+Name:           My
+Version:        1.0
+Synopsis:       A Warcraft III network hosting bot written in Haskell.
+Description:    I love gaming, I love haskell. I decided to write a game server
+                for the game Warcraft III. It is capable of running LAN games,
+                as well as announcing them to Battle.net for online play.
+Category:       Network, Game
+
+License:        GPL
+License-file:   LICENSE
+data-files:     README
+
+Author:         Kim Burgestrand
+Maintainer:     kim@burgestrand.se
+
+Stability:      alpha
+
+Cabal-Version:  >= 1.2
+Build-type:     Simple
+
+Executable My
+    main-is:        Main.hs
+    hs-source-dirs: src/
+    Build-Depends:  base,
+                    time,
+                    network,
+                    old-locale,
+                    stm,
+                    bytestring,
+                    network-bytestring == 0.1.2.1,
+                    hslogger == 1.0.7,
+                    monadLib == 3.5.2
+    
+    other-modules:  Announcer,
+                    Client,
+                    Common,
+                    Communication,
+                    Configuration
