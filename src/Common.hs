@@ -1,6 +1,6 @@
 {-|
     'Common' exports a lot of functionality that is common to all 
-    subparts of My.
+    subparts of MyS.
 -}
 module Common (
     module Communication,

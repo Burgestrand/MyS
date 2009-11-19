@@ -19,7 +19,7 @@ import Data.Time (getZonedTime)
 import Data.Time.Format (FormatTime, formatTime)
 import System.Locale (defaultTimeLocale)
 
--- | Creates the logfile @.\/Logs\/My-YYYY-MM-DD-HH:mm:ss.log@
+-- | Creates the logfile @.\/Logs\/MyS-YYYY-MM-DD-HH:mm:ss.log@
 --
 --   Logging level set to DEBUG.
 initLogger :: Priority -> IO ()
@@ -28,7 +28,7 @@ initLogger level = do
     time <- getZonedTime
 
     -- Growl logger
-    file  <- openLog ("./Logs/My-" ++ isoDatetime time ++ ".log")
+    file  <- openLog ("./Logs/MyS-" ++ isoDatetime time ++ ".log")
     growl <- verboseStreamHandler file DEBUG
     
     -- Set global logger

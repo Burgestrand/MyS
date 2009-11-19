@@ -95,7 +95,7 @@ mainLoop xs =
 showMenu :: IO ()
 showMenu = do
     putStrLn "+--+--+--+--+--+--+--+--+--+--+"
-    putStrLn "|  My: WC3 server in Haskell  |"
+    putStrLn "|  Mys: WC3 server in Haskell  |"
     putStrLn "+--+--+--+--+--+--+--+--+--+--+"
     putStrLn "| 1: Start a new server.      |"
     putStrLn "+ 2: Close down a server.     +"

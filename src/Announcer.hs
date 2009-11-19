@@ -57,7 +57,7 @@ announce var = do
     broadcast sock msg = sendTo sock msg (SockAddrInet 6112 (fromMaybe 0 $ inet_aton "127.0.0.1"))
 
 debug :: String -> IO ()
-debug = debugM "My.Announcer"
+debug = debugM "MyS.Announcer"
 
 error :: String -> IO ()
-error = errorM "My.Announcer"
+error = errorM "MyS.Announcer"

@@ -1,4 +1,4 @@
-Name:           My
+Name:           MyS
 Version:        1.0
 Synopsis:       A Warcraft III network hosting bot written in Haskell.
 Description:    I love gaming, I love haskell. I decided to write a game server
@@ -18,7 +18,7 @@ Stability:      alpha
 Cabal-Version:  >= 1.2
 Build-type:     Simple
 
-Executable My
+Executable MyS
     main-is:        Main.hs
     hs-source-dirs: src/
     Build-Depends:  base,

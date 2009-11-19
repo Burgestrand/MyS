@@ -1,8 +1,8 @@
-# My README
+# MyS README
 This README is written using [Markdown][] format. I suggest you convert  
 it to HTML before reading for a smoother experience.  
 
-My is a Warcraft III hosting bot. It is capable of starting up a game  
+MyS is a Warcraft III hosting bot. It is capable of starting up a game  
 server on a specified port on the host computer. Once the server is up  
 players can join; either from the local network or the internet. The  
 server itself can be controlled from the terminal as well, using the  
