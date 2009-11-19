@@ -1,9 +1,9 @@
 module Ext.Control.Monad (
-    module Control.Monad,
-    whileM,
+    module MonadLib,
+    whileM
 ) where
 
-import Control.Monad
+import MonadLib
 
 -- | While the first argument holds true, evaluate the second
 --

@@ -6,7 +6,8 @@ module Ext.Control.Concurrent (
     module Control.Concurrent,
     module Control.Concurrent.STM,
     writeTMVar,
-    modifyTMVar
+    modifyTMVar,
+    tselect
 ) where
 
 import Control.Concurrent
@@ -23,3 +24,7 @@ writeTMVar :: TMVar a -> a -> STM ()
 writeTMVar var a = do
     m <- tryTakeTMVar var
     putTMVar var a
+
+-- | Return the value of the first STM action that doesn’t retry
+tselect :: [STM a] -> STM a
+tselect = foldl orElse retry

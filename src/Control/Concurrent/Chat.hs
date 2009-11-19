@@ -2,7 +2,7 @@
     'Communication' provides an abstraction layer on communication 
     between threads.
 -}
-module Communication (
+module Control.Concurrent.Chat (
     -- * Types
     Chat,
     Message(..),
