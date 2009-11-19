@@ -2,29 +2,29 @@
     'Communication' provides an abstraction layer on communication 
     between threads.
 -}
-module Communication (
+module Control.Concurrent.Chat (
     -- * Types
+    Chat,
     Message(..),
-    Messages,
     
     -- * Functions
     
     -- ** STM
-    new,
-    receive,
-    peek,
-    send,
-    clone,
-    count,
+    newChat,
+    cloneChat,
+    countMessages,
+    receiveMessage,
+    peekMessage,
+    sendMessage,
     
     -- ** IO
     -- | Same functions as above, but within the IO monad.
-    newIO,
-    receiveIO,
-    peekIO,
-    sendIO,
-    cloneIO,
-    countIO,
+    newChatIO,
+    cloneChatIO,
+    receiveMessageIO,
+    peekMessageIO,
+    sendMessageIO,
+    countMessagesIO,
     
     -- * Control.Monad.STM
     STM,
@@ -33,67 +33,63 @@ module Communication (
 
 import Ext.Control.Concurrent
 
-newtype Messages = Messages (TChan Message, TMVar Int)
-
--- | Required for debugging. TODO: REMOVE ME.
-instance Show Messages where
-    show (Messages (msgs, count)) = "Messages"
+-- | A 'Chat' is basically a FIFO channel of Messages
+newtype Chat = Chat (TChan Message, TMVar Int)
 
 -- | The various message types used for cross-thread communication
-data Message = Connect
-             | Disconnect
-             | Packet String -- Packet from Network.BattleNet.Packets
+data Message = Packet String
+             | Disconnect { reason :: String }
     deriving (Show, Eq)
 
--- | Creates a new Message channel.
-new :: STM Messages
-new = do
+-- | Creates a new Chat channel
+newChat :: STM Chat
+newChat = do
     chan  <- newTChan
     count <- newTMVar 0
-    return $ Messages (chan, count)
+    return $ Chat (chan, count)
 
--- | Counts the unread messages in a Message channel.
-count :: Messages -> STM Int
-count (Messages a) = readTMVar (snd a)
+-- | Counts the unread Chat in a Chat channel
+countMessages :: Chat -> STM Int
+countMessages (Chat a) = readTMVar (snd a)
 
--- | Reads a message from a Message channel.
-receive :: Messages -> STM Message
-receive (Messages (chan, count)) = do
+-- | Reads a message from a Chat channel
+receiveMessage :: Chat -> STM Message
+receiveMessage (Chat (chan, count)) = do
     msg <- readTChan chan
     modifyTMVar count (1-)
     return msg
 
--- | Sends a message out onto the Message channel.
-send :: Messages -> Message -> STM ()
-send (Messages (chan, count)) msg = do
+-- | Sends a message out onto the Chat channel
+sendMessage :: Chat -> Message -> STM ()
+sendMessage (Chat (chan, count)) msg = do
     writeTChan chan msg
     modifyTMVar count (1+)
 
--- | Clones a Message channel. Data written to either is available on both.
-clone :: Messages -> STM Messages
-clone (Messages (chan, count)) = do
+-- | Clones a Chat channel. Data written to either is available on both
+cloneChat :: Chat -> STM Chat
+cloneChat (Chat (chan, count)) = do
     chan' <- dupTChan chan
-    return $ Messages (chan', count)
+    return $ Chat (chan', count)
 
--- | Peek’s in a message channel; returning the next item without removing it
-peek :: Messages -> STM Message
-peek (Messages (chan, count)) = do
+-- | Peek’s in a Chat channel; returning the next item without removing it
+peekMessage :: Chat -> STM Message
+peekMessage (Chat (chan, count)) = do
     msg <- readTChan chan
     unGetTChan chan msg
     return msg
 
 -- Convenience: types
-newIO     :: IO Messages
-receiveIO :: Messages -> IO Message
-peekIO    :: Messages -> IO Message
-sendIO    :: Messages -> Message -> IO ()
-cloneIO   :: Messages -> IO Messages
-countIO   :: Messages -> IO Int
+newChatIO        :: IO Chat
+cloneChatIO      :: Chat -> IO Chat
+receiveMessageIO :: Chat -> IO Message
+peekMessageIO    :: Chat -> IO Message
+sendMessageIO    :: Chat -> Message -> IO ()
+countMessagesIO  :: Chat -> IO Int
 
 -- Convenience. functions
-newIO      = atomically new
-receiveIO  = atomically . receive
-peekIO     = atomically . peek
-sendIO ch  = atomically . send ch
-cloneIO    = atomically . clone
-countIO    = atomically . count
+newChatIO        = atomically newChat
+cloneChatIO      = atomically . cloneChat
+receiveMessageIO = atomically . receiveMessage
+peekMessageIO    = atomically . peekMessage
+sendMessageIO ch = atomically . sendMessage ch
+countMessagesIO  = atomically . countMessages
