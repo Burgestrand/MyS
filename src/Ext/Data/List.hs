@@ -1,6 +1,9 @@
 module Ext.Data.List (
+    module Data.List,
     spliti
 ) where
+
+import Data.List
 
 {-|
     Split a list into chunks of @n@.
