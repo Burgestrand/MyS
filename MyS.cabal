@@ -38,20 +38,17 @@ Executable MyS
                     Common,
                     Communication,
                     Configuration,
-                    Server,
-                    
                     Data.Table,
-                    
                     Ext.Control.Concurrent,
+                    Ext.Control.Monad,
                     Ext.Data.Binary,
+                    Ext.Data.Bool,
                     Ext.Data.ByteString,
                     Ext.Data.List,
                     Ext.Network.Socket,
                     Ext.Text.Read,
-                    
-                    Network.BattleNet.Protocol,
                     Network.BattleNet.Packets,
-                    
+                    Network.BattleNet.Protocol,
+                    Server,
                     Util.Log,
-                    Util.Ternary,
                     Util.WC3
