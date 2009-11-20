@@ -27,4 +27,4 @@ writeTMVar var a = do
 
 -- | Return the value of the first STM action that doesn’t retry
 tselect :: [STM a] -> STM a
-tselect = foldl orElse retry
+tselect xs@(x:_) = foldl orElse retry xs

@@ -9,9 +9,13 @@ module Common (
     module Ext.Data.Bool,
     module Ext.Control.Monad,
     module Data.Maybe,
-    module Util.Log
+    module Util.Log,
+    ioSTM,
+    putStrLnM,
+    forkReader
 ) where
 
+import Control.Concurrent
 import Control.Concurrent.Chat
 import Configuration
 
@@ -21,10 +25,6 @@ import Util.Log
 import Ext.Data.Bool
 import Ext.Control.Monad
 
--- | Alias for "MonadLib#inBase"
-io :: (BaseM m n) => n a -> m a
-io = inBase
-
 -- | 'io' . 'atomically'
 ioSTM :: (BaseM m IO) => STM a -> m a
 ioSTM = io . atomically
@@ -32,3 +32,7 @@ ioSTM = io . atomically
 -- | 'io' . 'putStrLn'
 putStrLnM :: (BaseM m IO) => String -> m ()
 putStrLnM = io . putStrLn
+
+-- | Run a Reader Monad in a separate thread
+forkReader :: (ReaderM m a, BaseM m IO) => ReaderT a IO () -> m ThreadId
+forkReader reader = ask >>= io . forkIO . flip runReaderT reader

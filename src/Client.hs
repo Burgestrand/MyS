@@ -7,28 +7,32 @@
 -}
 module Client (
     Client,
-    handle
+    handle,
+    stdin,
+    stdout
 ) where
 
-import Common
+import Common hiding (handle)
 import Control.Concurrent
-import MonadLib hiding (handle)
-import Ext.Network.Socket
+import Ext.Data.List
+import Network.Socket (Socket)
+import Control.Exception (finally)
+import qualified Network.Socket as Socket
 
 data Client = Client {
         -- | Messages from anyone to Client
-        stdin  :: Messages,
+        stdin  :: Chat,
         -- | Messages from Client to anyone
-        stdout :: Messages,
+        stdout :: Chat,
         -- | The clients’ (most likely connected) socket
         sock   :: Socket
-    } deriving (Show)
+    }
 
 -- | Creates a new Client with the specified socket.
 mkClient :: Socket -> IO Client
 mkClient sock = do
-    stdin  <- newIO
-    stdout <- newIO
+    stdin  <- newChatIO
+    stdout <- newChatIO
     return Client { stdin  = stdin
                   , stdout = stdout
                   , sock   = sock }
@@ -41,30 +45,62 @@ handle sock = do
     return (client, thread)
 
 type ClientM = ReaderT Client IO
+
+-- XXX: Make something smarter with the error handling
 runClient :: Client -> IO ()
-runClient = flip runReaderT clientHandler
+runClient client = 
+    finally (runReaderT client clientHandler)
+            $ do Socket.sClose (sock client)
+                 sendMessageIO (stdout client) (Disconnect "Closed connection.")
 
 -- | Client handler
+--   
+--   1. Reads from the client socket, decoding any message and sends it
+--      to the server.
+--   2. Reads messages from the server and sends them to the client.
 clientHandler :: ClientM ()
 clientHandler = do
-    whileM continue process
-    inBase $ print "Bye bye"
+    -- Client -> Server
+    forkReader . forever $ do
+        str <- recv
+        putMessage (Packet str)
+        io $ print str
+    -- Server -> Client
+    whileM (peek >>= continue)
+           (getMessage >>= process)
   where
-    continue = peekMessage >>= return . (/= Disconnect)
-    process  = do
-        msg <- getMessage
-        inBase $ print msg
+    continue :: Message -> ClientM Bool
+    continue (Disconnect _) = return False
+    continue _              = return True
 
--- | 'peekIO' in the Client monad
-peekMessage :: ClientM Message
-peekMessage = asks stdin >>= inBase . peekIO
+process :: Message -> ClientM ()
+process (Packet m) = send m >> return ()
 
--- | 'receiveIO' in the Client monad
+-- * Messaging
+------------------------------------------------------------------------
+
+-- | "Network.Socket#recv" in the Client Monad
+recv :: ClientM String
+recv = do
+    sock <- asks sock
+    inBase $ Socket.recv sock 65535
+
+-- | "Network.Socket#send" in the Client Monad
+send :: String -> ClientM Int
+send msg = do
+    sock <- asks sock
+    inBase $ Socket.send sock msg
+
+-- | 'peekMessage' in the Client Monad
+peek :: ClientM Message
+peek = asks stdin >>= io . peekMessageIO
+
+-- | 'receiveMessage' in the Client monad
 getMessage :: ClientM Message
-getMessage = asks stdin >>= inBase . receiveIO
+getMessage = asks stdin >>= io . receiveMessageIO
 
--- | 'sendIO' in the Client monad
+-- | 'sendMessage' in the Client monad
 putMessage :: Message -> ClientM ()
 putMessage msg = do
     chan <- asks stdout
-    inBase $ sendIO chan msg
+    io $ sendMessageIO chan msg

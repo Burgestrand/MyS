@@ -1,6 +1,7 @@
 module Ext.Control.Monad (
     module MonadLib,
-    whileM
+    whileM,
+    io
 ) where
 
 import MonadLib
@@ -10,8 +11,11 @@ import MonadLib
 -- > whileM (getLine >>= return . (/= "y")) 
 -- >        (print "x")
 whileM :: (Monad m) => m Bool -> m a -> m ()
-whileM condition action = do
-    condition >>= run
+whileM condition action = condition >>= run
   where
     run False = return ()
     run True  = action >> whileM condition action
+
+-- | Alias for "MonadLib#inBase"
+io :: (BaseM m n) => n a -> m a
+io = inBase
