@@ -8,27 +8,25 @@ module Common (
     module Communication,
     module Configuration,
     module Ext.Data.Bool,
-    module Ext.Control.Monad,
     module Data.Maybe,
     module Util.Log,
     module Ext.Text.Read,
+    module Ext.Control.Monad,
     ioSTM,
     putStrLnM,
     forkReader,
     prompt, promptm
 ) where
 
+import Ext.Control.Monad
 import Control.Concurrent
 import Control.Concurrent.Chat
 import Communication
 import Configuration
-
 import Data.Maybe
 import Util.Log
-
 import Ext.Text.Read
 import Ext.Data.Bool
-import Ext.Control.Monad
 
 import System.IO
 

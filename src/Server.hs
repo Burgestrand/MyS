@@ -6,7 +6,6 @@ import qualified Client
 import Control.Exception (block)
 import Ext.Data.List
 import Ext.Control.Concurrent
-
 import Network.Socket
 import qualified Network.Socket as Socket
 
@@ -41,7 +40,7 @@ server :: Socket -> ServerM ()
 server sock = do
     forkReader $ runAcceptLoop sock
     forkReader runReader
-    runInteractive
+    runInteractive -- handle Ctrl-C
 
 runAcceptLoop :: Socket -> ServerM ()
 runAcceptLoop sock = forever $ do
@@ -53,16 +52,21 @@ runAcceptLoop sock = forever $ do
 runReader :: ServerM ()
 runReader = forever $ do
     clients <- asks clients
-    msg <- ioSTM $ do --join
+    (msg, thread) <- ioSTM $ do --join
         cs <- readTMVar clients
         case cs of
              [] -> retry
-             xs -> tselect
-                 . map receiveMessage
-                 . map Client.stdout
-                 . map snd
-                 $ xs
-    sendAll msg
+             _  -> tselect
+                 . map (\(thread, client) -> do msg <- receiveMessage (Client.stdout client)
+                                                return (msg, thread))
+                 $ cs
+    case msg of
+         (Disconnect m) -> nukeThread thread
+         _              -> process msg
+    process msg
+  where
+    process (Packet m)  = sendAll (Packet m)
+    process msg         = io $ print msg
 
 -- | Handles input from the user
 runInteractive :: ServerM ()
@@ -74,13 +78,35 @@ runInteractive = forever $ do
 addClient :: (ThreadId, Client) -> ServerM ()
 addClient client = asks clients >>= ioSTM . flip modifyTMVar (client:)
 
+-- | Nukes a client by:
+--   1. Removing the client from the list of clients
+--   2. Closing the clients’ socket
+--   3. Killing the clients’ thread
+nukeThread :: ThreadId -> ServerM ()
+nukeThread thread = do
+    clients <- asks clients
+    cs <- ioSTM $ do
+        cs <- readTMVar clients
+        let cs_alive = filter ((/= thread) . fst) cs
+        writeTMVar clients cs_alive
+        return $ filter ((== thread) . fst) cs
+    mapM_ (io . sClose . Client.sock . snd) cs
+    mapM_ (io . killThread . fst) cs
+
 -- | Send a message to the specified client
 sendOne :: Client -> Messages -> ServerM ()
 sendOne c = io . sendMessageIO (Client.stdin c)
 
+-- | Send a message to everybody EXCEPT the specified client
+sendAllBut :: Client -> Messages -> ServerM ()
+sendAllBut c msg = mapM_ (flip sendOne msg) 
+                 . filter (/= c)
+                 =<< clientList
+
 -- | Broadcast a message to all clients
 sendAll :: Messages -> ServerM ()
-sendAll msg = clientList >>= mapM_ (flip sendOne msg)
+sendAll msg = mapM_ (flip sendOne msg)
+            =<< clientList
 
 -- | Receive the first available message
 getMessage :: ServerM Messages

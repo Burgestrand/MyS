@@ -9,14 +9,14 @@ module Client (
     Client,
     handle,
     stdin,
-    stdout
+    stdout,
+    sock
 ) where
 
-import Common hiding (handle)
+import Common
 import Control.Concurrent
 import Ext.Data.List
 import Network.Socket (Socket)
-import Control.Exception (finally)
 import qualified Network.Socket as Socket
 
 data Client = Client {
@@ -27,6 +27,9 @@ data Client = Client {
         -- | The clients’ (most likely connected) socket
         sock   :: Socket
     }
+
+instance Eq Client where
+    c == c' = sock c == sock c'
 
 -- | Creates a new Client with the specified socket.
 mkClient :: Socket -> IO Client
@@ -48,10 +51,12 @@ type ClientM = ReaderT Client IO
 
 -- XXX: Make something smarter with the error handling
 runClient :: Client -> IO ()
-runClient client = 
-    finally (runReaderT client clientHandler)
-            $ do Socket.sClose (sock client)
-                 sendMessageIO (stdout client) (Packet "Closed connection.")
+runClient client = do
+    catchE (runReaderT client clientHandler) catcher
+           `finally` Socket.sClose (sock client)
+  where
+    catcher :: IOException -> IO ()
+    catcher e = sendMessageIO (stdout client) (Disconnect (show e))
 
 -- | Client handler
 --   
@@ -60,21 +65,18 @@ runClient client =
 --   2. Reads messages from the server and sends them to the client.
 clientHandler :: ClientM ()
 clientHandler = do
-    -- Client -> Server
-    forkReader . forever $ do
-        str <- recv
-        putMessage (Packet str)
     -- Server -> Client
-    whileM (peek >>= continue)
-           (getMessage >>= process)
-  where
-    continue :: Messages -> ClientM Bool
-    continue (Disconnect _) = return False
-    continue _              = return True
+    forkReader $ 
+        forever (getMessage >>= process)
+    
+    -- Client -> Server
+    forever $ do
+        msg <- fmap (head . lines) recv
+        putMessage $ fromMaybe (Packet msg) (readm msg)
 
 process :: Messages -> ClientM ()
-process (Packet m)  = send ("Packet: " ++ m) >> return ()
-process (Command m) = send ("Command: " ++ m) >> return ()
+process (Packet m)  = send ("Packet: " ++ m ++ "\n") >> return ()
+process (Command m) = send ("Command: " ++ m ++ "\n") >> return ()
 process msg         = io . putStrLn $ "Client.process: unhandled message " ++ show msg
 
 -- * Messaging
