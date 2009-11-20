@@ -21,9 +21,9 @@ import qualified Network.Socket as Socket
 
 data Client = Client {
         -- | Messages from anyone to Client
-        stdin  :: Chat,
+        stdin  :: Chat Messages,
         -- | Messages from Client to anyone
-        stdout :: Chat,
+        stdout :: Chat Messages,
         -- | The clients’ (most likely connected) socket
         sock   :: Socket
     }
@@ -51,7 +51,7 @@ runClient :: Client -> IO ()
 runClient client = 
     finally (runReaderT client clientHandler)
             $ do Socket.sClose (sock client)
-                 sendMessageIO (stdout client) (Disconnect "Closed connection.")
+                 sendMessageIO (stdout client) (Packet "Closed connection.")
 
 -- | Client handler
 --   
@@ -68,12 +68,14 @@ clientHandler = do
     whileM (peek >>= continue)
            (getMessage >>= process)
   where
-    continue :: Message -> ClientM Bool
+    continue :: Messages -> ClientM Bool
     continue (Disconnect _) = return False
     continue _              = return True
 
-process :: Message -> ClientM ()
-process (Packet m) = send m >> return ()
+process :: Messages -> ClientM ()
+process (Packet m)  = send ("Packet: " ++ m) >> return ()
+process (Command m) = send ("Command: " ++ m) >> return ()
+process msg         = io . putStrLn $ "Client.process: unhandled message " ++ show msg
 
 -- * Messaging
 ------------------------------------------------------------------------
@@ -91,15 +93,15 @@ send msg = do
     io $ Socket.send sock msg
 
 -- | 'peekMessage' in the Client Monad
-peek :: ClientM Message
+peek :: ClientM Messages
 peek = asks stdin >>= io . peekMessageIO
 
 -- | 'receiveMessage' in the Client monad
-getMessage :: ClientM Message
+getMessage :: ClientM Messages
 getMessage = asks stdin >>= io . receiveMessageIO
 
 -- | 'sendMessage' in the Client monad
-putMessage :: Message -> ClientM ()
+putMessage :: Messages -> ClientM ()
 putMessage msg = do
     chan <- asks stdout
     io $ sendMessageIO chan msg

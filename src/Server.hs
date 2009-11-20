@@ -68,28 +68,22 @@ runReader = forever $ do
 runInteractive :: ServerM ()
 runInteractive = forever $ do
     msg <- io $ prompt "server$> "
-    case msg of
-         "help"     -> usage
-         _          -> sendAll (Packet msg)
-  where
-    usage = io $ do
-        putStrLn "Commands: "
-        mapM_ (putStrLn . ("\t"++)) ["help"]
+    sendAll $ maybe (Command msg) id (readm msg)
 
 -- | Add a client to the list of clients
 addClient :: (ThreadId, Client) -> ServerM ()
 addClient client = asks clients >>= ioSTM . flip modifyTMVar (client:)
 
 -- | Send a message to the specified client
-sendOne :: Client -> Message -> ServerM ()
+sendOne :: Client -> Messages -> ServerM ()
 sendOne c = io . sendMessageIO (Client.stdin c)
 
 -- | Broadcast a message to all clients
-sendAll :: Message -> ServerM ()
+sendAll :: Messages -> ServerM ()
 sendAll msg = clientList >>= mapM_ (flip sendOne msg)
 
 -- | Receive the first available message
-getMessage :: ServerM Message
+getMessage :: ServerM Messages
 getMessage = ioSTM 
            . tselect
            . map receiveMessage
@@ -97,7 +91,7 @@ getMessage = ioSTM
            =<< clientList
 
 -- | Retrieves sum of unread messages
-getUnread :: [Chat] -> STM Int
+getUnread :: [Chat Messages] -> STM Int
 getUnread = foldl orElse retry
           . map countMessages
 

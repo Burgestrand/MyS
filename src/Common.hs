@@ -5,6 +5,7 @@
 -}
 module Common (
     module Control.Concurrent.Chat,
+    module Communication,
     module Configuration,
     module Ext.Data.Bool,
     module Ext.Control.Monad,
@@ -19,6 +20,7 @@ module Common (
 
 import Control.Concurrent
 import Control.Concurrent.Chat
+import Communication
 import Configuration
 
 import Data.Maybe
