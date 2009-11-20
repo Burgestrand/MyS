@@ -64,7 +64,6 @@ clientHandler = do
     forkReader . forever $ do
         str <- recv
         putMessage (Packet str)
-        io $ print str
     -- Server -> Client
     whileM (peek >>= continue)
            (getMessage >>= process)
@@ -83,13 +82,13 @@ process (Packet m) = send m >> return ()
 recv :: ClientM String
 recv = do
     sock <- asks sock
-    inBase $ Socket.recv sock 65535
+    io $ Socket.recv sock 65535
 
 -- | "Network.Socket#send" in the Client Monad
 send :: String -> ClientM Int
 send msg = do
     sock <- asks sock
-    inBase $ Socket.send sock msg
+    io $ Socket.send sock msg
 
 -- | 'peekMessage' in the Client Monad
 peek :: ClientM Message

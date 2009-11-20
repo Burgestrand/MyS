@@ -53,7 +53,7 @@ runAcceptLoop sock = forever $ do
 runReader :: ServerM ()
 runReader = forever $ do
     clients <- asks clients
-    msg <- ioSTM $ do
+    msg <- ioSTM $ do --join
         cs <- readTMVar clients
         case cs of
              [] -> retry
@@ -67,12 +67,14 @@ runReader = forever $ do
 -- | Handles input from the user
 runInteractive :: ServerM ()
 runInteractive = forever $ do
-    cs <- io
-        . mapM countMessagesIO
-        . map Client.stdout
-        =<< clientList
-    io $ print cs
-    io $ threadDelay 1000000
+    msg <- io $ prompt "server$> "
+    case msg of
+         "help"     -> usage
+         _          -> sendAll (Packet msg)
+  where
+    usage = io $ do
+        putStrLn "Commands: "
+        mapM_ (putStrLn . ("\t"++)) ["help"]
 
 -- | Add a client to the list of clients
 addClient :: (ThreadId, Client) -> ServerM ()
@@ -100,6 +102,7 @@ getUnread = foldl orElse retry
           . map countMessages
 
 -- | Retrieve the list of clients
+---  XXX: Make an STM version of this that uses retry if the list is empty
 clientList :: ServerM [Client]
 clientList = fmap (map snd) 
           . ioSTM 

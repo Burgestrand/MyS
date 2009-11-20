@@ -10,9 +10,11 @@ module Common (
     module Ext.Control.Monad,
     module Data.Maybe,
     module Util.Log,
+    module Ext.Text.Read,
     ioSTM,
     putStrLnM,
-    forkReader
+    forkReader,
+    prompt, promptm
 ) where
 
 import Control.Concurrent
@@ -22,8 +24,11 @@ import Configuration
 import Data.Maybe
 import Util.Log
 
+import Ext.Text.Read
 import Ext.Data.Bool
 import Ext.Control.Monad
+
+import System.IO
 
 -- | 'io' . 'atomically'
 ioSTM :: (BaseM m IO) => STM a -> m a
@@ -36,3 +41,13 @@ putStrLnM = io . putStrLn
 -- | Run a Reader Monad in a separate thread
 forkReader :: (ReaderM m a, BaseM m IO) => ReaderT a IO () -> m ThreadId
 forkReader reader = ask >>= io . forkIO . flip runReaderT reader
+
+-- | Prompt the user with the given string prefix
+prompt :: String -> IO String
+prompt str = do
+    putStr str
+    hFlush stdout
+    getLine
+
+promptm :: (Read a) => String -> a -> IO a
+promptm str d = fmap (readDefault d) (prompt str)
