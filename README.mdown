@@ -8,6 +8,9 @@ players can join; either from the local network or the internet. The
 server itself can be controlled from the terminal as well, using the  
 remote control utility provided.  
 
+## Suspended
+Project is kept on hold until further notice. I have other things to do.
+
 ## Development Guidelines
 There needs to be some guidelines. As I develop these as I go, they  
 might not be followed in earlier releases; but they should be followed  
